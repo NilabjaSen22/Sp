@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartPark Business & Operations Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+        .nav-link {
+            transition: all 0.2s ease-in-out;
+        }
+        .nav-link.active {
+            background-color: #fbbf24; /* amber-400 */
+            color: #1e293b; /* slate-800 */
+            font-weight: 600;
+        }
+        .stat-card {
+            background-color: white;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            border: 1px solid #e2e8f0; /* slate-200 */
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.1);
+        }
+        .content-section {
+            padding-top: 4.5rem;
+            margin-top: -4.5rem;
+        }
+        #app-view main {
+            padding-bottom: 4rem;
+        }
+        .tab-button.active {
+            border-color: #8b5cf6; /* purple-500 */
+            color: #8b5cf6;
+        }
+        .notification {
+            transition: all 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body class="text-slate-800">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, createContext, useContext, useRef } = React;
+
+        const AppContext = createContext();
+        const generateId = () => Math.random().toString(36).substring(2, 9);
+
+        const translations = {
+            en: {
+                appName: "SmartPark",
+                settings: "Settings",
+                logout: "Logout",
+                registerForSmartPark: "New User!! Register here....",
+                fullName: "Full Name",
+                mobileNumber: "Mobile Number",
+                email: "Email",
+                password: "Password",
+                register: "Register",
+                registrationSuccessful: "Registration Successful!",
+                welcomeToSmartPark: "Welcome to SmartPark! You can now search for parking spots.",
+                registrationFailed: "Registration Failed",
+                pleaseFillAllFields: "Please fill in all fields.",
+                findYourParkingSpot: "Find Your Parking Spot",
+                selectCity: "Select City",
+                enterLocation: "Enter location or destination",
+                search: "Search",
+                poweredByAI: "Powered by Predictive Availability AI for optimal suggestions.",
+                realTimeMapView: "Real-Time Map View",
+                available: "Available",
+                premium: "Premium",
+                occupied: "Occupied",
+                searchResults: "Search Results",
+                searchingForParking: (loc) => `Searching for parking near "${loc}". Showing real-time availability.`,
+                searchError: "Search Error",
+                pleaseEnterLocation: "Please enter a location to search.",
+                selectYourSlot: "Select Your Slot",
+                pricesDynamicallyAdjusted: "Prices are dynamically adjusted based on demand.",
+                slotSelected: "Slot Selected",
+                youHaveSelected: (slotName, price) => `You have selected ${slotName}. Price: ₹${price}.`,
+                selectionRequired: "Selection Required",
+                pleaseSelectSlot: "Please select a parking slot first.",
+                carWashAddon: "1-Tap Car Wash Add-on (₹150)",
+                proceedToBooking: "Proceed to Booking",
+                bookingSummary: "Booking Summary",
+                noBookingDetails: "No booking details available. Please go back and select a slot.",
+                parkingSlot: "Parking Slot",
+                basePrice: "Base Price",
+                carWash: "1-Tap Car Wash",
+                localParkingTax: (rate) => `Local Parking Tax (${rate}%):`,
+                totalAmount: "Total Amount:",
+                confirmBooking: "Confirm Booking & Pay",
+                bookingConfirmed: "Booking Confirmed",
+                proceedingToPayment: "Your booking is confirmed! Proceeding to payment.",
+                completePayment: "Complete Payment",
+                amountDue: "Amount Due:",
+                payWithUPI: "Pay with UPI",
+                corporateBilling: "Corporate Billing",
+                paymentProcessedSecurely: "Your payment is processed securely with tokenization for PCI-DSS compliance.",
+                processingPayment: "Processing Payment",
+                simulatingUpiPayment: "Simulating UPI payment... Payment tokenized for PCI-DSS compliance.",
+                paymentSuccessful: "Payment Successful!",
+                paidViaUPI: (amount) => `₹${amount} paid via UPI. Your QR check-in code is ready.`,
+                requestSentToCorporate: "Request sent to your corporate account for approval. Payment will be processed automatically.",
+                invoiceDetails: "Invoice Details",
+                noInvoiceAvailable: "No invoice available. Please complete a booking first.",
+                invoiceID: "Invoice ID:",
+                date: "Date:",
+                service: "Service:",
+                addOn: "Add-on:",
+                taxableAmount: "Taxable Amount:",
+                gst: (rate) => `GST (${rate}%):`,
+                totalAmountDue: "Total Amount Due:",
+                qrCheckinCode: "QR Check-in Code",
+                scanCodeForEntry: "Scan this code at the parking gate for seamless entry and auto-checkout.",
+                startNewBooking: "Start New Booking",
+                thankYou: "Thank You!",
+                parkingExperienceComplete: "Your parking experience is now complete. We look forward to serving you again!",
+                appSettings: "App Settings",
+                languageRegion: "Language & Region",
+                currentLanguage: (lang) => `Current language: ${lang}`,
+                familySharing: "Family Sharing",
+                shareSubscription: "Share your SmartPark subscription benefits with your family members.",
+                manageFamily: "Manage Family",
+                familySharingInitiated: "Family sharing setup initiated. Invite members via email.",
+                emergencyServices: "Emergency Services",
+                requestAssistance: "Request emergency assistance directly from the app.",
+                requestJumpStart: "Request Jump-Start",
+                jumpStartRequested: "Emergency jump-start service requested. Our team is on the way!",
+                dataPrivacy: "Data & Privacy (GDPR)",
+                deleteMyAccount: "Delete My Account",
+                exerciseRightToDelete: "Exercise your right to data deletion.",
+                confirmDeletion: "Confirm Deletion",
+                areYouSureDeleteAccount: "Are you sure you want to delete your account? This action is irreversible.",
+                gdprDataRemoval: "In accordance with GDPR, all your personal data will be permanently removed.",
+                accountDeleted: "Account Deleted",
+                accountDeletedMessage: "Your account and all associated data have been permanently deleted as per GDPR compliance.",
+                suggestedParkingLocations: "Suggested Parking Locations",
+                bestParkingFor: (loc) => `Best Parking for "${loc}"`,
+                regularUsedLocations: "Regularly Used Locations",
+                location: "Location",
+                distance: "Distance",
+                availability: "Availability",
+                services: "Services",
+                carWashDetailing: "Car Wash & Detailing",
+                getCarSparkling: "Get your car sparkling while parked.",
+                evCharging: "EV Charging",
+                findBookCharging: "Find and book charging stations.",
+                vehicleMaintenance: "Vehicle Maintenance",
+                minorServicing: "Minor servicing at your parking spot.",
+                valetParking: "Valet Parking",
+                hassleFreeParking: "Hassle-free parking and retrieval.",
+                priorityBooking: "Priority Booking for Premium Users",
+                premiumBenefits: "Enjoy guaranteed spots and exclusive access with a premium subscription.",
+                dynamicPricing: "Dynamic Pricing Explained",
+                pricingAdjusts: "Our prices adjust in real-time based on demand, ensuring fair rates.",
+                corporateBillingBenefits: "Corporate Billing Benefits",
+                streamlineExpenses: "Streamline parking expenses for your business with centralized billing.",
+                evChargingLocator: "EV Charging Locator",
+                findChargingStations: "Find nearby EV charging stations on the map.",
+                locateCharging: "Locate Charging Stations",
+                valetParkingService: "Valet Parking Service",
+                bookValet: "Book a valet to park your car for ultimate convenience.",
+                bookValetService: "Book Valet Service",
+                carWashService: "Car Wash Service",
+                scheduleCarWash: "Schedule a car wash and detailing while your car is parked.",
+                scheduleService: "Schedule Service",
+                nearbyAvailableSpots: "Nearby Available Spots",
+                spotBookedSuccessfully: (spot) => `Spot at ${spot} booked successfully!`,
+                automatedParkingBooked: "Automated parking spot booked successfully!",
+                prebookAdvanced: "Advanced Pre-Booking",
+                timeFrom: "Time From",
+                timeTo: "To Time",
+                confirmPrebook: "Confirm Pre-book",
+                prebookSubmitted: "Your pre-booking request has been submitted. We'll notify you when a spot is confirmed!",
+                myBookings: "My Bookings",
+                status: "Status:",
+                confirmed: "Confirmed",
+                completed: "Completed",
+                repeatBooking: "Repeat Booking",
+                login: "Login",
+                userLogin: "User Login",
+                providerLogin: "Service Provider Login",
+                username: "Username",
+                loginFailed: "Login Failed",
+                invalidCredentials: "Invalid credentials. Please try again.",
+                welcomeProvider: "Welcome, Service Provider!",
+                dashboard: "Dashboard",
+                currentOccupancy: "Current Occupancy",
+                parkingSpots: "Parking Spots",
+                occupiedSpots: "Occupied Spots",
+                availableSpots: "Available Spots",
+                manageSpots: "Manage Spots",
+                addSpot: "Add Spot",
+                spotId: "Spot ID",
+                spotType: "Spot Type",
+                standard: "Standard",
+                premiumSpot: "Premium Spot",
+                evChargingSpot: "EV Charging Spot",
+                valetSpot: "Valet Spot",
+                add: "Add",
+                remove: "Remove",
+                spotAdded: (id) => `Spot ${id} added!`,
+                spotRemoved: (id) => `Spot ${id} removed!`,
+                spotAlreadyExists: (id) => `Spot ${id} already exists.`,
+                spotNotFound: (id) => `Spot ${id} not found.`,
+                bookingHistory: "Booking History",
+                noBookingsYet: "No bookings yet.",
+                manageServiceRequests: "Manage Service Requests",
+                noServiceRequests: "No service requests.",
+                requestType: "Request Type",
+                customer: "Customer",
+                complete: "Complete",
+                requestCompleted: "Request completed!",
+                selectUserType: "Select User Type",
+                customerApp: "Customer App",
+                serviceProviderApp: "Service Provider App",
+                copyright: "© 2025 SmartPark. All rights reserved.",
+                enhancedWithAI: "Enhanced with AI, compliant with global standards, and designed for your convenience.",
+                forgotPassword: "Forgot Password?",
+                resetPassword: "Reset Password",
+                enterEmailForReset: "Enter your email to receive a password reset link.",
+                sendResetLink: "Send Reset Link",
+                resetLinkSent: "If an account with that email exists, a password reset link has been sent.",
+                backToLogin: "Back to Login",
+                providerRegistration: "Provider Registration",
+                registerAsProvider: "Register as a Service Provider",
+                backToUserTypeSelection: "Back to User Type Selection",
+                currentLocation: "Current Location",
+                close: "Close",
+                aboutUs: "About Us",
+                aboutUsContent: "SmartPark is dedicated to revolutionizing urban mobility by providing smart, efficient, and user-friendly parking solutions. Our mission is to reduce traffic congestion, minimize parking search times, and enhance the overall urban experience through innovative technology and strategic partnerships.\n\nOur Team:\n- Founder: Nilabja Sen\n- Co-Founder: Animesh\n- Marketing: Rahul & Sukhbir Sohal\n- Finance: Armaan Sanket",
+                disclaimer: "Disclaimer: This application is a prototype for demonstration purposes. All data, prices, and services are simulated. Real-world functionality may vary.",
+                emailSent: "Registration email sent to ",
+                carModel: "Car Model",
+                carCompany: "Car Company",
+                maintenanceType: "Maintenance Type",
+                selectMaintenance: "Select Maintenance Type",
+                oilChange: "Oil Change",
+                tireRotation: "Tire Rotation",
+                brakeInspection: "Brake Inspection",
+                fullService: "Full Service",
+                other: "Other",
+                scheduleBooking: "Schedule Booking",
+                bookingScheduled: "Booking Scheduled!",
+                pickUpLocation: "Pick-up Location",
+                dropOffLocation: "Drop-off Location",
+                valetBooking: "Valet Booking",
+                valetBooked: "Valet service booked!",
+                gpsRequired: "GPS Location Required",
+                enableGpsMessage: "Please enable GPS location for this service to work.",
+                enableGps: "Enable GPS",
+                gpsEnabled: "GPS Enabled!",
+                comingSoon: "Coming Soon!",
+                comingSoonMessage: "Hey!! We are coming soon to your City...",
+                lastBooked: "Last Booked",
+                peakHours: "Peak Hours",
+                fillingFast: "Filling Fast",
+                spotsAvailable: (num) => `${num} spots available`,
+                moreDetails: "More Details",
+                loginSuccessful: "Login Successful!",
+                home: "Home",
+                prebook: "Pre-book",
+                bookings: "My Bookings",
+                guestPrompt: "Registration Required",
+                guestMessage: "This feature requires a user account. Please register to continue.",
+                registerNow: "Register Now",
+                statutoryCompliance: "Statutory & Compliance",
+                gdprPolicy: "GDPR Policy",
+                gdprText: "SmartPark is fully compliant with GDPR. We ensure your data is handled securely and you have the right to control your information, including the right to deletion.",
+                pciDssPolicy: "PCI-DSS Compliance",
+                pciDssText: "All payments are processed using a PCI-DSS compliant, tokenized system. Your financial details are never stored on our servers.",
+                localTaxPolicy: "Local Tax Regulations",
+                localTaxText: "We adhere to all local tax regulations, including GST. All applicable taxes are calculated and displayed transparently during the booking process.",
+                morthPolicy: "MORTH Guidelines",
+                morthText: "We follow all guidelines set by the Ministry of Road Transport and Highways (MORTH) for parking facilities to ensure safety and standardization.",
+                scheduledJobs: "Scheduled Jobs",
+                pendingJobs: "Pending Jobs",
+                totalEarnings: "Total Earnings",
+                aboutProvider: "About Provider",
+                providerRating: "Provider Rating",
+                jobs: "Jobs",
+                ratings: "Ratings",
+                bookAgain: "Book Again",
+                viewInvoice: "View Invoice",
+                duration: "Duration",
+                benefits: "Benefits",
+                privacyPolicy: "Privacy Policy",
+                termsAndConditions: "Terms and Conditions",
+                cancelBooking: "Cancel Booking",
+                confirmCancellation: "Confirm Cancellation",
+                bookingCancelled: "Booking Cancelled",
+                refundMessage: "Your booking has been cancelled. The amount will be refunded to your original payment account shortly."
+            }
+        };
+
+        const AppHeader = ({ onNavigate, onLogout, showLogout = true, isGuest }) => {
+            const { appLanguage, setView } = useContext(AppContext);
+            const t = translations[appLanguage] || translations.en;
+
+            return (
+                <header className="bg-slate-800 p-4 shadow-lg flex items-center justify-between sticky top-0 z-30">
+                    <div className="flex items-center space-x-2">
+                         <button onClick={() => setView('report')} className="text-slate-300 hover:text-white text-lg font-semibold pr-2 mr-2 border-r border-slate-600">&larr; Report</button>
+                        <span className="text-amber-400 text-4xl font-black relative">P<span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-white text-xl font-bold">&#x27A4;</span></span>
+                        <h1 className="text-3xl font-extrabold text-white">{t.appName}</h1>
+                    </div>
+                    <nav className="flex items-center space-x-4">
+                        {!isGuest && <button onClick={() => onNavigate('settings')} className="text-slate-300 hover:text-white text-lg font-semibold">⚙️ {t.settings}</button>}
+                        {showLogout && (<button onClick={onLogout} className="bg-red-600 text-white font-bold py-2 px-4 rounded-xl hover:bg-red-700">{isGuest ? 'Exit' : t.logout}</button>)}
+                    </nav>
+                </header>
+            );
+        };
+
+        const Modal = ({ show, title, message, onClose, children }) => {
+            if (!show) return null;
+            const { appLanguage } = useContext(AppContext);
+            const t = translations[appLanguage] || translations.en;
+            return (
+                <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
+                    <div className="bg-slate-900 p-6 rounded-2xl shadow-xl text-center max-w-lg w-full space-y-4 border border-slate-700">
+                        {title && <h3 className="text-2xl font-bold text-amber-400 mb-2">{title}</h3>}
+                        {message && <p className="text-white text-lg">{message}</p>}
+                        {children}
+                        <button onClick={onClose} className="mt-4 bg-amber-400 text-slate-900 font-bold py-2 px-5 rounded-xl hover:bg-amber-500">{t.close}</button>
+                    </div>
+                </div>
+            );
+        };
+        
+        const CustomerLoginScreen = ({ onLoginSuccess, onRegisterClick, showModal, onNavigate }) => {
+            const { appLanguage } = useContext(AppContext);
+            const t = translations[appLanguage] || translations.en;
+            const [email, setEmail] = useState('user@example.com');
+            const [password, setPassword] = useState('password');
+
+            const handleLogin = (e) => {
+                e.preventDefault();
+                if (email === 'user@example.com' && password === 'password') {
+                    showModal(t.loginSuccessful, t.welcomeToSmartPark);
+                    onLoginSuccess();
+                } else {
+                    showModal(t.loginFailed, t.invalidCredentials);
+                }
+            };
+
+            return (
+                <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-white text-slate-900">
+                    <div className="bg-slate-50 rounded-2xl p-8 shadow-xl max-w-md w-full border border-slate-200">
+                        <h2 className="text-3xl font-bold text-amber-600 mb-6 text-center">{t.userLogin}</h2>
+                        <form onSubmit={handleLogin} className="space-y-4">
+                            <div><label htmlFor="customer-email" className="block text-slate-800 text-sm font-bold mb-2">{t.email}</label><input type="email" id="customer-email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full p-3 rounded-xl bg-slate-100" placeholder="user@example.com" /></div>
+                            <div><label htmlFor="customer-password" className="block text-slate-800 text-sm font-bold mb-2">{t.password}</label><input type="password" id="customer-password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full p-3 rounded-xl bg-slate-100" placeholder="password" /></div>
+                            <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-xl hover:bg-blue-700">{t.login}</button>
+                        </form>
+                        <button onClick={onRegisterClick} className="mt-2 w-full text-blue-800 font-bold py-2 px-4 rounded-xl hover:bg-blue-100">{t.registerForSmartPark}</button>
+                        <div className="mt-4 text-center text-sm">
+                            <button onClick={() => onNavigate('privacy')} className="text-slate-500 hover:underline">Privacy Policy</button>
+                            <span className="mx-2 text-slate-400">|</span>
+                            <button onClick={() => onNavigate('terms')} className="text-slate-500 hover:underline">Terms & Conditions</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+        
+        const RegistrationScreen = ({ onRegisterSuccess, onLoginClick, showModal }) => {
+            const { appLanguage } = useContext(AppContext);
+            const t = translations[appLanguage] || translations.en;
+            const [name, setName] = useState('');
+            const [mobile, setMobile] = useState('');
+            const [email, setEmail] = useState('');
+            const [password, setPassword] = useState('');
+
+            const handleRegister = (e) => {
+                e.preventDefault();
+                if (name && mobile && email && password) {
+                    showModal(t.registrationSuccessful, t.welcomeToSmartPark);
+                    onRegisterSuccess();
+                } else {
+                    showModal(t.registrationFailed, t.pleaseFillAllFields);
+                }
+            };
+
+            return (
+                 <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-white text-slate-900">
+                    <div className="bg-slate-50 rounded-2xl p-8 shadow-xl max-w-md w-full border border-slate-200">
+                        <h2 className="text-3xl font-bold text-amber-600 mb-6 text-center">{t.registerForSmartPark}</h2>
+                        <form onSubmit={handleRegister} className="space-y-4">
+                            <div><label className="block text-slate-800 text-sm font-bold mb-2">{t.fullName}</label><input type="text" value={name} onChange={(e) => setName(e.target.value)} className="w-full p-3 rounded-xl bg-slate-100" placeholder="John Doe"/></div>
+                            <div><label className="block text-slate-800 text-sm font-bold mb-2">{t.mobileNumber}</label><input type="tel" value={mobile} onChange={(e) => setMobile(e.target.value)} className="w-full p-3 rounded-xl bg-slate-100" placeholder="9876543210"/></div>
+                            <div><label className="block text-slate-800 text-sm font-bold mb-2">{t.email}</label><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full p-3 rounded-xl bg-slate-100" placeholder="john.doe@example.com"/></div>
+                            <div><label className="block text-slate-800 text-sm font-bold mb-2">{t.password}</label><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full p-3 rounded-xl bg-slate-100" placeholder="********"/></div>
+                            <button type="submit" className="w-full bg-pink-600 text-white font-bold py-3 px-6 rounded-xl hover:bg-pink-700">{t.register}</button>
+                        </form>
+                        <button onClick={onLoginClick} className="mt-4 w-full text-blue-800 font-bold py-2 px-4 rounded-xl hover:bg-blue-100">Already have an account? Login</button>
+                    </div>
+                </div>
+            );
+        };
+        
+        const HomeScreen = ({ onNavigate, showModal, isGuest, showGuestPrompt, lastBooking, onRepeatBooking }) => {
+            const { appLanguage } = useContext(AppContext);
+            const t = translations[appLanguage] || translations.en;
+            const [city, setCity] = useState('Bhubaneswar');
+            const [location, setLocation] = useState('');
+
+            const handleSearch = () => {
+                if (isGuest) { showGuestPrompt(); return; }
+                if (location.trim()) { onNavigate('slotSelection', { city, location }); } 
+                else { showModal(t.searchError, t.pleaseEnterLocation); }
+            };
+            
+            const handleCityChange = (e) => {
+                const newCity = e.target.value;
+                setCity(newCity);
+                if (['Delhi', 'Mumbai', 'Kolkata', 'Chennai', 'Bangalore'].includes(newCity)) {
+                    showModal(t.comingSoon, t.comingSoonMessage);
+                }
+            };
+
+            const cityLocations = {
+                Bhubaneswar: ["Sahid Nagar", "Jaydev Vihar", "Patia", "Khandagiri", "Old Town", "Rasulgarh"],
+                Jamshedpur: ["Sakchi", "Bistupur", "Kadma", "Sonari", "Telco", "Adityapur"]
+            };
+
+            return (
+                <div className="p-4 md:p-8 space-y-8 bg-white text-slate-900">
+                    <div className="bg-slate-50 rounded-2xl p-6 shadow-xl border border-slate-200">
+                        <h2 className="text-2xl font-bold text-amber-600 mb-4">{t.findYourParkingSpot}</h2>
+                        <div className="flex flex-col md:flex-row gap-4 mb-4">
+                            <select value={city} onChange={handleCityChange} className="p-3 rounded-xl bg-slate-100 text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-400">
+                                <option value="Bhubaneswar">Bhubaneswar</option>
+                                <option value="Jamshedpur">Jamshedpur</option>
+                                <option value="Delhi">Delhi</option>
+                                <option value="Mumbai">Mumbai</option>
+                                <option value="Kolkata">Kolkata</option>
+                                <option value="Chennai">Chennai</option>
+                                <option value="Bangalore">Bangalore</option>
+                            </select>
+                            <select value={location} onChange={(e) => setLocation(e.target.value)} className="flex-grow p-3 rounded-xl bg-slate-100 text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-400">
+                                <option value="">Select Location</option>
+                                {(cityLocations[city] || []).map(loc => <option key={loc} value={loc}>{loc}</option>)}
+                            </select>
+                            <button onClick={handleSearch} className="bg-purple-600 text-white font-bold py-3 px-6 rounded-xl hover:bg-purple-700">{t.search}</button>
+                        </div>
+                        <p className="text-slate-700 text-sm mt-3">{t.poweredByAI}</p>
+                    </div>
+                    
+                    {lastBooking && !isGuest && (
+                        <div className="bg-slate-50 rounded-2xl p-6 shadow-xl border border-slate-200">
+                            <h3 className="text-xl font-bold text-amber-600 mb-3">{t.lastBooked}</h3>
+                            <div className="flex justify-between items-center bg-white p-4 rounded-lg">
+                                <div>
+                                    <p className="font-bold text-slate-900">{lastBooking.slot.name} at {lastBooking.location}</p>
+                                    <p className="text-sm text-slate-600">{lastBooking.date} @ {lastBooking.time}</p>
+                                </div>
+                                <button onClick={() => onRepeatBooking(lastBooking)} className="bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600">{t.bookAgain}</button>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="bg-slate-50 rounded-2xl p-6 shadow-xl border border-slate-200">
+                        <h2 className="text-2xl font-bold text-slate-900 mb-4">{t.realTimeMapView} - {city}</h2>
+                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 text-white text-center font-bold">
+                            {(cityLocations[city] || []).map(loc => (
+                                <button key={loc} onClick={() => onNavigate('slotSelection', { city, location: loc })} className="bg-green-500 p-4 rounded-lg cursor-pointer hover:bg-green-600">
+                                    {loc}
+                                    <span className="block text-xs font-normal">15/20 Available</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+        
+        const SlotSelectionScreen = ({ onSlotSelect, showModal, isGuest, showGuestPrompt }) => {
+            const { appLanguage } = useContext(AppContext);
+            const t = translations[appLanguage] || translations.en;
+            const [selectedSlot, setSelectedSlot] = useState(null);
+            const [addCarWash, setAddCarWash] = useState(false);
+
+            const mockSlots = [ { name: "A-01", price: 60, premium: false }, { name: "A-02", price: 60, premium: false }, { name: "B-05 (Premium)", price: 95, premium: true }, { name: "C-03", price: 60, premium: false }, { name: "D-10 (Premium)", price: 95, premium: true }, ];
+
+            const handleProceed = () => {
+                if(isGuest) {
+                    showGuestPrompt();
+                    return;
+                }
+                if (selectedSlot) {
+                    onSlotSelect(selectedSlot, addCarWash);
+                } else {
+                    showModal(t.selectionRequired, t.pleaseSelectSlot);
+                }
+            };
+            
+            return (
+                <div className="p-8 space-y-8 bg-white text-slate-900">
+                    <div className="bg-slate-50 rounded-2xl p-6 shadow-xl border border-slate-200">
+                        <h2 className="text-2xl font-bold text-amber-600 mb-4">{t.selectYourSlot}</h2>
+                        <p className="text-slate-700 mb-6">{t.pricesDynamicallyAdjusted}</p>
+                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
+                            {mockSlots.map(slot => (
+                                <button key={slot.name} onClick={() => setSelectedSlot(slot)} className={`p-4 rounded-xl text-center font-bold text-lg transition duration-300 ${selectedSlot?.name === slot.name ? 'bg-pink-600 text-white shadow-lg ring-4 ring-pink-300' : (slot.premium ? 'bg-amber-400 text-slate-900 hover:bg-amber-500' : 'bg-blue-200 text-blue-900 hover:bg-blue-300')}`}>
+                                    {slot.name.split(' ')[0]}
+                                </button>
+                            ))}
+                        </div>
+                        {selectedSlot && ( <div className="mt-6 p-4 bg-green-100 border border-green-300 rounded-xl text-center"> <h3 className="font-bold text-green-800">{t.youHaveSelected(selectedSlot.name, selectedSlot.price)}</h3> </div> )}
+                        <div className="mt-6 flex items-center">
+                             <input type="checkbox" id="carwash" checked={addCarWash} onChange={(e) => setAddCarWash(e.target.checked)} className="h-5 w-5 rounded text-pink-600 focus:ring-pink-500" />
+                             <label htmlFor="carwash" className="ml-3 text-slate-800 font-semibold">{t.carWashAddon}</label>
+                        </div>
+                        <button onClick={handleProceed} className="mt-8 w-full bg-purple-600 text-white font-bold py-3 px-6 rounded-xl hover:bg-purple-700 transition duration-300 shadow-lg">{t.proceedToBooking}</button>
+                    </div>
+                </div>
+            )
+        };
+        
+        const BookingSummaryScreen = ({ bookingDetails, onConfirmBooking }) => {
+            const { appLanguage } = useContext(AppContext);
+            const t = translations[appLanguage] || translations.en;
+
+            if (!bookingDetails || !bookingDetails.slot) {
+                return ( <div className="p-8 text-center text-slate-800"><p>{t.noBookingDetails}</p></div> );
+            }
+            
+            const { slot, carWash } = bookingDetails;
+            const taxRate = 18;
+            const carWashPrice = carWash ? 150 : 0;
+            const basePrice = slot.price;
+            const taxableAmount = basePrice + carWashPrice;
+            const taxAmount = taxableAmount * (taxRate / 100);
+            const totalAmount = taxableAmount + taxAmount;
+            
+            return (
+                 <div className="p-8 space-y-8 bg-white text-slate-900">
+                    <div className="bg-slate-50 rounded-2xl p-6 shadow-xl border border-slate-200">
+                        <h2 className="text-2xl font-bold text-amber-600 mb-6">{t.bookingSummary}</h2>
+                        <div className="space-y-3 text-lg text-slate-800">
+                            <div className="flex justify-between"><span className="font-semibold">{t.parkingSlot}:</span> <span>{slot.name}</span></div>
+                            <div className="flex justify-between"><span className="font-semibold">{t.basePrice}:</span> <span>₹{basePrice.toFixed(2)}</span></div>
+                            {carWash && <div className="flex justify-between"><span className="font-semibold">{t.carWash}:</span> <span>₹{carWashPrice.toFixed(2)}</span></div>}
+                            <hr className="my-2 border-slate-200" />
+                            <div className="flex justify-between"><span className="font-semibold">{t.localParkingTax(taxRate)}</span> <span>₹{taxAmount.toFixed(2)}</span></div>
+                            <hr className="my-2 border-slate-200" />
+                            <div className="flex justify-between text-2xl font-extrabold text-slate-900"><span>{t.totalAmount}</span><span>₹{totalAmount.toFixed(2)}</span></div>
+                        </div>
+                        <button onClick={() => onConfirmBooking(totalAmount)} className="mt-8 w-full bg-pink-600 text-white font-bold py-3 px-6 rounded-xl hover:bg-pink-700">{t.confirmBooking}</button>
+                    </div>
+                </div>
+            );
+        };
+        
+        const PaymentScreen = ({ amount, onPaymentSuccess, showModal }) => {
+            const { appLanguage } = useContext(AppContext);
+            const t = translations[appLanguage] || translations.en;
+
+            const handlePayment = (method) => {
+                let message = method === 'UPI' ? t.simulatingUpiPayment : t.requestSentToCorporate;
+                showModal(t.processingPayment, message);
+                setTimeout(() => {
+                    let successTitle = method === 'UPI' ? t.paymentSuccessful : 'Request Sent';
+                    let successMessage = method === 'UPI' ? t.paidViaUPI(amount.toFixed(2)) : t.requestSentToCorporate;
+                    showModal(successTitle, successMessage);
+                    onPaymentSuccess();
+                }, 2000);
+            };
+
+            return (
+                <div className="p-8 space-y-8 bg-white text-slate-900">
+                    <div className="bg-slate-50 rounded-2xl p-6 shadow-xl border border-slate-200 text-center">
+                        <h2 className="text-2xl font-bold text-amber-600 mb-4">{t.completePayment}</h2>
+                        <p className="text-slate-800 text-xl mb-2">{t.amountDue}</p>
+                        <p className="text-4xl font-extrabold text-slate-900 mb-8">₹{amount.toFixed(2)}</p>
+                        <div className="space-y-4">
+                            <button onClick={() => handlePayment('UPI')} className="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-xl hover:bg-blue-700">{t.payWithUPI}</button>
+                             <button onClick={() => handlePayment('Corporate')} className="w-full bg-purple-600 text-white font-bold py-3 px-6 rounded-xl hover:bg-purple-700">{t.corporateBilling}</button>
+                        </div>
+                        <p className="text-xs text-slate-600 mt-6">{t.paymentProcessedSecurely}</p>
+                    </div>
+                </div>
+            );
+        };
+
+        const CustomerApp = ({ onLogout, isGuest: initialIsGuest = false }) => {
+            const { appLanguage, setAppLanguage } = useContext(AppContext);
+            const t = translations[appLanguage] || translations.en;
+            const [currentScreen, setCurrentScreen] = useState(initialIsGuest ? 'home' : 'login');
+            const [navigationData, setNavigationData] = useState(null);
+            const [loggedIn, setLoggedIn] = useState(initialIsGuest);
+            const [isGuest, setIsGuest] = useState(initialIsGuest);
+            const [lastBooking, setLastBooking] = useState(null);
+            const [bookingDetails, setBookingDetails] = useState(null);
+            const [paymentAmount, setPaymentAmount] = useState(0);
+            const [bookings, setBookings] = useState([]);
+            const [viewingInvoice, setViewingInvoice] = useState(null);
+            const [showModal, setShowModal] = useState(false);
+            const [modalTitle, setModalTitle] = useState('');
+            const [modalMessage, setModalMessage] = useState('');
+            const [modalChildren, setModalChildren] = useState(null);
+
+            const openModal = (title, message, children = null) => { setShowModal(true); setModalTitle(title); setModalMessage(message); setModalChildren(children); };
+            const closeModal = () => setShowModal(false);
+            
+            const showGuestPrompt = () => {
+                openModal(t.guestPrompt, t.guestMessage, 
+                    <button onClick={() => { closeModal(); navigateTo('registration'); }} className="mt-4 bg-green-600 text-white font-bold py-2 px-5 rounded-xl hover:bg-green-700">{t.registerNow}</button>
+                );
+            };
+
+            const handleLoginSuccess = () => { setLoggedIn(true); setIsGuest(false); setCurrentScreen('home'); };
+            const handleRegisterSuccess = () => { setLoggedIn(true); setIsGuest(false); setCurrentScreen('home'); };
+            const handleSearchSuccess = () => setCurrentScreen('slotSelection');
+            const handleSlotSelect = (slot, carWash) => { setBookingDetails({ slot, carWash, location: 'Sahid Nagar' }); setCurrentScreen('bookingSummary'); };
+            const handleConfirmBooking = (amount) => { setPaymentAmount(amount); setCurrentScreen('payment'); };
+            const handlePaymentSuccess = () => {
+                const newBooking = { id: generateId(), ...bookingDetails, amount: paymentAmount, date: new Date().toLocaleDateString(), time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), status: 'Completed' };
+                setLastBooking(newBooking);
+                setBookings(prev => [newBooking, ...prev]);
+                setCurrentScreen('invoicing');
+            };
+             const handleRepeatBooking = (booking) => {
+                showModal("Re-booking", `Searching for a spot near ${booking.location}...`);
+                setTimeout(() => { closeModal(); setCurrentScreen('slotSelection'); }, 1500);
+            };
+            
+            const handlePrebookSubmit = (prebookData) => {
+                const newBooking = { id: generateId(), ...prebookData, status: 'Upcoming' };
+                setBookings(prev => [newBooking, ...prev]);
+                openModal("Pre-Booking Confirmed", `Your booking for ${prebookData.location} on ${prebookData.date} is confirmed.`);
+                navigateTo('mybookings');
+            };
+            
+            const handleServiceBooking = (serviceData) => {
+                const newBooking = { id: generateId(), ...serviceData, date: new Date().toLocaleDateString(), time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), status: 'Upcoming' };
+                setBookings(prev => [newBooking, ...prev]);
+                openModal("Service Scheduled", `Your ${serviceData.type} has been scheduled.`);
+                navigateTo('mybookings');
+            };
+            
+            const handleCancelBooking = (bookingId) => {
+                setBookings(bookings.map(b => b.id === bookingId ? { ...b, status: 'Cancelled' } : b));
+                openModal(t.bookingCancelled, t.refundMessage);
+            };
+
+            const handleNewBooking = () => { setBookingDetails(null); setPaymentAmount(0); setCurrentScreen('home'); };
+            const navigateTo = (screen, data = null) => {
+                 if (isGuest && !['home', 'services', 'carWash', 'vehicleMaintenance', 'valetParking', 'benefits', 'privacy', 'terms'].includes(screen)) { showGuestPrompt(); } 
+                 else { 
+                    setNavigationData(data);
+                    if(screen === 'invoiceDetails') setViewingInvoice(data);
+                    setCurrentScreen(screen);
+                 }
+            };
+            
+            const handleLogoutAndExit = () => {
+                if(isGuest) { onLogout(); } 
+                else { setLoggedIn(false); setIsGuest(false); setCurrentScreen('login'); }
+            };
+
+            return (
+                <div id="app-view" className="min-h-screen bg-white text-slate-900 flex flex-col">
+                    <AppHeader onNavigate={navigateTo} onLogout={handleLogoutAndExit} showLogout={loggedIn} isGuest={isGuest} />
+                    <main className="flex-1 overflow-y-auto">
+                        {!loggedIn ? (
+                            currentScreen === 'login' ? <CustomerLoginScreen onLoginSuccess={handleLoginSuccess} onRegisterClick={() => navigateTo('registration')} showModal={openModal} onNavigate={navigateTo} />
+                            : currentScreen === 'registration' ? <RegistrationScreen onRegisterSuccess={handleRegisterSuccess} onLoginClick={() => navigateTo('login')} showModal={openModal} />
+                            : currentScreen === 'privacy' ? <PrivacyPolicyScreen onBack={() => navigateTo('login')} />
+                            : <TermsConditionsScreen onBack={() => navigateTo('login')} />
+                        ) : (
+                            <div key={appLanguage}>
+                                {currentScreen === 'home' && <HomeScreen onNavigate={navigateTo} showModal={openModal} isGuest={isGuest} showGuestPrompt={showGuestPrompt} lastBooking={lastBooking} onRepeatBooking={handleRepeatBooking} />}
+                                {currentScreen === 'slotSelection' && <SlotSelectionScreen onSlotSelect={handleSlotSelect} showModal={openModal} isGuest={isGuest} showGuestPrompt={showGuestPrompt} />}
+                                {currentScreen === 'bookingSummary' && <BookingSummaryScreen bookingDetails={bookingDetails} onConfirmBooking={handleConfirmBooking} />}
+                                {currentScreen === 'payment' && <PaymentScreen amount={paymentAmount} onPaymentSuccess={handlePaymentSuccess} showModal={openModal} />}
+                                {currentScreen === 'invoicing' && <InvoicingScreen bookingDetails={bookingDetails} amount={paymentAmount} onNewBooking={handleNewBooking} />}
+                                {currentScreen === 'settings' && <SettingsScreen setAppLanguage={setAppLanguage} onLogout={handleLogoutAndExit} showModal={openModal} />}
+                                {currentScreen === 'services' && <ServicesScreen onNavigate={navigateTo} showModal={openModal} isGuest={isGuest} showGuestPrompt={showGuestPrompt} />}
+                                {currentScreen === 'carWash' && <CarWashScreen showModal={openModal} isGuest={isGuest} showGuestPrompt={showGuestPrompt} onSchedule={handleServiceBooking} />}
+                                {currentScreen === 'vehicleMaintenance' && <VehicleMaintenanceScreen showModal={openModal} isGuest={isGuest} showGuestPrompt={showGuestPrompt} onRequest={handleServiceBooking} />}
+                                {currentScreen === 'valetParking' && <ValetParkingScreen />}
+                                {currentScreen === 'benefits' && <BenefitsScreen />}
+                                {currentScreen === 'prebook' && <PrebookScreen onPrebookSubmit={handlePrebookSubmit} isGuest={isGuest} showGuestPrompt={showGuestPrompt} />}
+                                {currentScreen === 'mybookings' && <MyBookingsScreen bookings={bookings} onNavigate={navigateTo} onCancelBooking={handleCancelBooking} />}
+                                {currentScreen === 'invoiceDetails' && <InvoicingScreen bookingDetails={viewingInvoice} amount={viewingInvoice.amount} onNewBooking={() => navigateTo('mybookings')} isPastBooking />}
+                            </div>
+                        )}
+                    </main>
+                    {loggedIn && !isGuest && ( 
+                        <nav className="fixed bottom-0 left-0 right-0 bg-slate-800 border-t border-slate-700 shadow-lg z-20">
+                            <ul className="flex justify-around items-center h-16">
+                                <li><button onClick={() => navigateTo('home')} className={`flex flex-col items-center text-sm font-semibold p-2 ${currentScreen === 'home' ? 'text-amber-400' : 'text-slate-200'}`}><span className="text-xl">🏠</span>{t.home}</button></li>
+                                <li><button onClick={() => navigateTo('prebook')} className={`flex flex-col items-center text-sm font-semibold p-2 ${currentScreen === 'prebook' ? 'text-amber-400' : 'text-slate-200'}`}><span className="text-xl">🗓️</span>{t.prebook}</button></li>
+                                <li><button onClick={() => navigateTo('services')} className={`flex flex-col items-center text-sm font-semibold p-2 ${currentScreen === 'services' ? 'text-amber-400' : 'text-slate-200'}`}><span className="text-xl">✨</span>{t.services}</button></li>
+                                <li><button onClick={() => navigateTo('mybookings')} className={`flex flex-col items-center text-sm font-semibold p-2 ${currentScreen === 'mybookings' ? 'text-amber-400' : 'text-slate-200'}`}><span className="text-xl">📝</span>{t.myBookings}</button></li>
+                            </ul>
+                        </nav>
+                    )}
+                    <Modal show={showModal} title={modalTitle} message={modalMessage} onClose={closeModal}>{modalChildren}</Modal>
+                </div>
+            );
+        };
+        
+        const ServiceProviderApp = ({ onLogout }) => {
+            const [loggedIn, setLoggedIn] = useState(false);
+            const [showModal, setShowModal] = useState(false);
+            const [modalTitle, setModalTitle] = useState('');
+            const [modalMessage, setModalMessage] = useState('');
+            
+            const openModal = (title, message) => { setShowModal(true); setModalTitle(title); setModalMessage(message); };
+            const closeModal = () => setShowModal(false);
+            const handleLoginSuccess = () => { setLoggedIn(true); };
+            
+            return (
+                 <div className="min-h-screen bg-white text-slate-900 flex flex-col">
+                    <AppHeader onNavigate={() => {}} onLogout={onLogout} showLogout={loggedIn} />
+                    <main className="flex-1 overflow-y-auto">
+                        {!loggedIn ? <ProviderLoginScreen onLoginSuccess={handleLoginSuccess} showModal={openModal} /> : <ProviderDashboardScreen />}
+                    </main>
+                    <Modal show={showModal} title={modalTitle} message={modalMessage} onClose={closeModal} />
+                 </div>
+            );
+        };
+        
+        const ProviderLoginScreen = ({ onLoginSuccess, showModal }) => {
+            const { appLanguage } = useContext(AppContext);
+            const t = translations[appLanguage] || translations.en;
+            const [username, setUsername] = useState('provider');
+            const [password, setPassword] = useState('password');
+
+            const handleLogin = (e) => {
+                e.preventDefault();
+                if (username === 'provider' && password === 'password') { showModal(t.welcomeProvider, ''); onLoginSuccess(); } 
+                else { showModal(t.loginFailed, t.invalidCredentials); }
+            };
+            
+            return (
+                <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-white">
+                    <div className="bg-slate-50 rounded-2xl p-8 shadow-xl max-w-md w-full">
+                        <h2 className="text-3xl font-bold text-amber-600 mb-6 text-center">{t.providerLogin}</h2>
+                        <form onSubmit={handleLogin} className="space-y-4">
+                             <div><label className="block text-slate-800 text-sm font-bold mb-2">{t.username}</label><input type="text" value={username} onChange={(e) => setUsername(e.target.value)} className="w-full p-3 rounded-xl bg-slate-100" /></div>
+                            <div><label className="block text-slate-800 text-sm font-bold mb-2">{t.password}</label><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full p-3 rounded-xl bg-slate-100" /></div>
+                            <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-xl hover:bg-blue-700">{t.login}</button>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+        
+        const ProviderDashboardScreen = () => {
+            const { appLanguage } = useContext(AppContext);
+            const t = translations[appLanguage] || translations.en;
+            const [activeTab, setActiveTab] = useState('dashboard');
+            
+            const renderStars = (rating) => Array(5).fill(0).map((_, i) => <span key={i} className={`text-2xl ${i < rating ? 'text-amber-400' : 'text-slate-300'}`}>★</span>).reduce((acc, curr) => [acc, ' ', curr]);
+
+            return (
+                <div className="p-4 md:p-8">
+                    <div className="border-b border-slate-200 mb-4">
+                        <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+                            <button onClick={() => setActiveTab('dashboard')} className={`tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'dashboard' ? 'active' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}>{t.dashboard}</button>
+                            <button onClick={() => setActiveTab('jobs')} className={`tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'jobs' ? 'active' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}>{t.jobs}</button>
+                            <button onClick={() => setActiveTab('ratings')} className={`tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'ratings' ? 'active' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}>{t.ratings}</button>
+                        </nav>
+                    </div>
+                    <div>
+                        {activeTab === 'dashboard' && (
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div className="stat-card"><h3 className="text-slate-500 font-semibold">{t.totalEarnings}</h3><p className="text-4xl font-extrabold mt-2">₹45,230</p></div>
+                                <div className="stat-card"><h3 className="text-slate-500 font-semibold">{t.pendingJobs}</h3><p className="text-4xl font-extrabold mt-2">8</p></div>
+                                <div className="stat-card"><h3 className="text-slate-500 font-semibold">{t.scheduledJobs}</h3><p className="text-4xl font-extrabold mt-2">22</p></div>
+                            </div>
+                        )}
+                        {activeTab === 'jobs' && <div><h3 className="text-xl font-bold mb-4">Job Management</h3><p>Pending and scheduled jobs would be listed here.</p></div>}
+                        {activeTab === 'ratings' && <div><h3 className="text-xl font-bold mb-4">Customer Ratings</h3><div className="flex items-center gap-4">{renderStars(4)} <span className="font-bold text-xl">4.5 (120 Reviews)</span></div></div>}
+                    </div>
+                </div>
+            );
+        };
+        
+        const PrebookScreen = ({ onPrebookSubmit, isGuest, showGuestPrompt }) => {
+            const { appLanguage } = useContext(AppContext);
+            const t = translations[appLanguage] || translations.en;
+            const [city, setCity] = useState('Bhubaneswar');
+            const [location, setLocation] = useState('Sahid Nagar');
+            const [date, setDate] = useState('');
+            const [time, setTime] = useState('');
+
+            const handlePrebook = (e) => {
+                e.preventDefault();
+                if (isGuest) { showGuestPrompt(); return; }
+                onPrebookSubmit({ location, date, time, slot: { name: "Pre-Booked" } });
+            };
+            
+            const cityLocations = {
+                Bhubaneswar: ["Sahid Nagar", "Jaydev Vihar", "Patia"],
+                Jamshedpur: ["Sakchi", "Bistupur", "Kadma"]
+            };
+
+            return (
+                <div className="p-8">
+                    <div className="bg-slate-50 rounded-2xl p-6 shadow-xl max-w-lg mx-auto">
+                        <h2 className="text-2xl font-bold text-amber-600 mb-4">{t.prebookAdvanced}</h2>
+                        <form onSubmit={handlePrebook} className="space-y-4">
+                            <div><label className="block text-sm font-bold mb-1">{t.selectCity}</label>
+                                <select value={city} onChange={(e) => setCity(e.target.value)} className="w-full p-2 rounded-lg bg-white border">
+                                    <option value="Bhubaneswar">Bhubaneswar</option><option value="Jamshedpur">Jamshedpur</option>
+                                </select>
+                            </div>
+                            <div><label className="block text-sm font-bold mb-1">{t.location}</label>
+                                <select value={location} onChange={(e) => setLocation(e.target.value)} className="w-full p-2 rounded-lg bg-white border">
+                                    {(cityLocations[city] || []).map(loc => <option key={loc} value={loc}>{loc}</option>)}
+                                </select>
+                            </div>
+                            <div><label className="block text-sm font-bold mb-1">{t.date}</label><input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full p-2 rounded-lg bg-white border"/></div>
+                            <div><label className="block text-sm font-bold mb-1">{t.timeFrom}</label><input type="time" value={time} onChange={e => setTime(e.target.value)} className="w-full p-2 rounded-lg bg-white border"/></div>
+                            <button type="submit" className="w-full bg-pink-600 text-white font-bold py-3 rounded-xl mt-4">{t.confirmPrebook}</button>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+        
+        const ServicesScreen = ({ onNavigate, isGuest, showGuestPrompt, showModal }) => {
+            const { appLanguage } = useContext(AppContext);
+            const t = translations[appLanguage] || translations.en;
+            
+             const handleJumpStart = () => {
+                if (isGuest) { showGuestPrompt(); return; }
+                showModal(t.gpsRequired, t.enableGpsMessage, 
+                    <button onClick={() => { showModal(t.jumpStartRequested, ""); }} className="mt-4 bg-green-600 text-white font-bold py-2 px-5 rounded-xl">{t.enableGps}</button>
+                );
+            };
+
+            return (
+                <div className="p-4 md:p-8 space-y-8">
+                    <div className="bg-slate-50 rounded-2xl p-6 shadow-xl">
+                        <h2 className="text-2xl font-bold text-amber-600 mb-4">{t.services}</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="stat-card"><h3 className="text-xl font-bold">{t.carWashDetailing}</h3><p className="text-slate-600 mt-1">{t.getCarSparkling}</p><button onClick={() => onNavigate('carWash')} className="bg-purple-500 text-white font-bold py-2 px-4 rounded-lg mt-3">{t.scheduleService}</button></div>
+                            <div className="stat-card"><h3 className="text-xl font-bold">{t.vehicleMaintenance}</h3><p className="text-slate-600 mt-1">{t.minorServicing}</p><button onClick={() => onNavigate('vehicleMaintenance')} className="bg-red-500 text-white font-bold py-2 px-4 rounded-lg mt-3">{t.scheduleService}</button></div>
+                            <div className="stat-card"><h3 className="text-xl font-bold">{t.valetParking}</h3><p className="text-slate-600 mt-1">{t.hassleFreeParking}</p><button onClick={() => onNavigate('valetParking')} className="bg-blue-500 text-white font-bold py-2 px-4 rounded-lg mt-3">{t.moreDetails}</button></div>
+                            <div className="stat-card"><h3 className="text-xl font-bold">{t.emergencyServices}</h3><p className="text-slate-600 mt-1">{t.requestAssistance}</p><button onClick={handleJumpStart} className="bg-orange-500 text-white font-bold py-2 px-4 rounded-lg mt-3">{t.requestJumpStart}</button></div>
+                        </div>
+                    </div>
+                     <div className="bg-slate-50 rounded-2xl p-6 shadow-xl">
+                        <h2 className="text-2xl font-bold text-blue-900 mb-4">Benefits & More</h2>
+                        <div className="space-y-4">
+                             <div className="stat-card"><h3 className="text-xl font-bold">{t.priorityBooking}</h3><p className="text-slate-600 mt-1">{t.premiumBenefits}</p></div>
+                             <div className="stat-card"><h3 className="text-xl font-bold">{t.corporateBillingBenefits}</h3><p className="text-slate-600 mt-1">{t.streamlineExpenses}</p></div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+        
+        const CarWashScreen = ({ showModal, isGuest, showGuestPrompt, onSchedule }) => {
+            const packages = [
+                { name: "Express Wash", price: 250, features: ["Exterior Wash", "Tire Shine"] },
+                { name: "Deluxe Wash", price: 500, features: ["Express Wash", "Interior Vacuum", "Dashboard Polish"] },
+                { name: "Ultimate Detail", price: 1200, features: ["Deluxe Wash", "Wax & Polish", "Upholstery Cleaning"] }
+            ];
+            const handleSchedule = (pkg) => {
+                if(isGuest) { showGuestPrompt(); return; }
+                onSchedule({ type: pkg.name, amount: pkg.price });
+            };
+            return (
+                <div className="p-8">
+                    <h2 className="text-3xl font-bold text-amber-600 mb-6">Car Wash & Detailing</h2>
+                    <div className="grid md:grid-cols-3 gap-6">
+                        {packages.map(pkg => (
+                            <div key={pkg.name} className="stat-card flex flex-col">
+                                <h3 className="text-xl font-bold text-blue-800">{pkg.name}</h3>
+                                <p className="text-3xl font-bold my-4">₹{pkg.price}</p>
+                                <ul className="text-slate-600 space-y-2 flex-grow">
+                                    {pkg.features.map(f => <li key={f}>✓ {f}</li>)}
+                                </ul>
+                                <button onClick={() => handleSchedule(pkg)} className="mt-6 bg-purple-600 text-white font-bold py-2 px-4 rounded-lg w-full">Schedule</button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+        
+        const VehicleMaintenanceScreen = ({ showModal, isGuest, showGuestPrompt, onRequest }) => {
+            const services = [
+                { name: "Oil Change", price: 800 },
+                { name: "Tire Rotation", price: 400 },
+                { name: "Brake Inspection", price: 600 },
+                { name: "Full Service Checkup", price: 2500 }
+            ];
+            const handleRequest = (srv) => {
+                if(isGuest) { showGuestPrompt(); return; }
+                onRequest({ type: srv.name, amount: srv.price });
+            }
+            return (
+                <div className="p-8">
+                    <h2 className="text-3xl font-bold text-amber-600 mb-6">Vehicle Maintenance</h2>
+                    <div className="space-y-4">
+                        {services.map(srv => (
+                            <div key={srv.name} className="bg-white p-4 rounded-lg shadow flex justify-between items-center">
+                                <p className="font-bold text-lg">{srv.name}</p>
+                                <div className="text-right">
+                                    <p className="font-bold text-lg">₹{srv.price}</p>
+                                    <button onClick={() => handleRequest(srv)} className="text-sm bg-red-500 text-white py-1 px-3 rounded-md">Request</button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+        
+        const ValetParkingScreen = () => (
+            <div className="p-8">
+                <h2 className="text-3xl font-bold text-amber-600 mb-6">Valet Parking Service</h2>
+                <p className="text-slate-600">Our professional valet service offers the ultimate convenience. Simply drop your car at the designated point, and our trained staff will park it for you in a secure location. When you're ready to leave, use the app to request your car, and we'll have it waiting for you.</p>
+            </div>
+        );
+
+        const SettingsScreen = ({ setAppLanguage, onLogout, showModal, onNavigate }) => {
+            const { appLanguage } = useContext(AppContext);
+            const t = translations[appLanguage] || translations.en;
+             const [openAccordion, setOpenAccordion] = useState(null);
+
+            const AccordionItem = ({ title, children, id }) => (
+                <div className="border-b">
+                    <h2>
+                        <button type="button" onClick={() => setOpenAccordion(openAccordion === id ? null : id)} className="flex items-center justify-between w-full p-5 font-medium text-left text-gray-700">
+                            <span>{title}</span>
+                            <svg className={`w-6 h-6 shrink-0 transform transition-transform ${openAccordion === id ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd"></path></svg>
+                        </button>
+                    </h2>
+                    <div className={`${openAccordion === id ? '' : 'hidden'}`}><div className="p-5 border-t-0 border-gray-200"><p className="mb-2 text-gray-500">{children}</p></div></div>
+                </div>
+            );
+            
+            const handleDeleteAccount = () => {
+                showModal(t.confirmDeletion, t.areYouSureDeleteAccount, 
+                    <button onClick={() => { showModal(t.accountDeleted, t.accountDeletedMessage); onLogout(); }} className="mt-4 bg-red-600 text-white font-bold py-2 px-5 rounded-xl">
+                        {t.deleteMyAccount}
+                    </button>
+                );
+            };
+
+            return (
+                <div className="p-8">
+                    <div className="bg-slate-50 rounded-2xl p-6 shadow-xl max-w-2xl mx-auto">
+                        <h2 className="text-2xl font-bold text-amber-600 mb-4">{t.appSettings}</h2>
+                        <div className="mb-6"><label className="block text-sm font-bold mb-2">{t.languageRegion}</label><select value={appLanguage} onChange={(e) => setAppLanguage(e.target.value)} className="w-full p-2 rounded-lg bg-white border"><option value="en">English</option><option value="hi">Hindi</option></select></div>
+                        <div className="mb-6"><h3 className="text-xl font-bold mb-2">{t.statutoryCompliance}</h3>
+                            <AccordionItem title={t.gdprPolicy} id="gdpr">{t.gdprText}</AccordionItem>
+                            <AccordionItem title={t.pciDssPolicy} id="pci">{t.pciDssText}</AccordionItem>
+                            <AccordionItem title={t.localTaxPolicy} id="tax">{t.localTaxText}</AccordionItem>
+                            <AccordionItem title={t.morthPolicy} id="morth">{t.morthText}</AccordionItem>
+                        </div>
+                        <div className="mb-6"><h3 className="text-xl font-bold mb-2">{t.aboutUs}</h3><p className="text-slate-600">{t.aboutUsContent}</p></div>
+                        <button onClick={handleDeleteAccount} className="w-full bg-red-600 text-white font-bold py-3 rounded-xl">{t.deleteMyAccount}</button>
+                    </div>
+                </div>
+            );
+        };
+        
+        const MyBookingsScreen = ({ bookings, onNavigate, onCancelBooking }) => {
+            const { appLanguage } = useContext(AppContext);
+            const t = translations[appLanguage] || translations.en;
+            const upcomingBookings = bookings.filter(b => b.status === 'Upcoming');
+            const pastBookings = bookings.filter(b => b.status !== 'Upcoming');
+
+            return (
+                <div className="p-4 md:p-8 space-y-6">
+                    <h2 className="text-2xl font-bold text-amber-600 mb-4">{t.myBookings}</h2>
+                    <div>
+                        <h3 className="text-xl font-bold text-blue-800 mb-2">Upcoming Bookings</h3>
+                        {upcomingBookings.length === 0 ? <p className="text-slate-500">No upcoming bookings.</p> : upcomingBookings.map(booking => (
+                            <div key={booking.id} className="bg-blue-100 p-4 rounded-lg shadow-md mb-3">
+                                <p className="font-bold">{booking.location} on {booking.date} at {booking.time}</p>
+                                <button onClick={() => onCancelBooking(booking.id)} className="text-sm text-red-600 hover:underline">{t.cancelBooking}</button>
+                            </div>
+                        ))}
+                    </div>
+                     <div>
+                        <h3 className="text-xl font-bold text-blue-800 mb-2">Past Bookings</h3>
+                        {pastBookings.length === 0 ? <p className="text-slate-500">{t.noBookingsYet}</p> : pastBookings.map(booking => (
+                            <div key={booking.id} className="bg-slate-50 p-4 rounded-lg shadow-md mb-3">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <p className="font-bold text-lg text-slate-900">{booking.slot.name}</p>
+                                        <p className="text-sm text-slate-600">{booking.date} @ {booking.time}</p>
+                                        {booking.carWash && <p className="text-sm text-purple-600 font-semibold">{t.carWash}</p>}
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="font-bold text-lg">₹{booking.amount.toFixed(2)}</p>
+                                        <button onClick={() => onNavigate('invoiceDetails', booking)} className="text-sm text-blue-600 hover:underline">{t.viewInvoice}</button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+        
+        const InvoicingScreen = ({ bookingDetails, amount, onNewBooking, isPastBooking }) => {
+            const { appLanguage } = useContext(AppContext);
+            const t = translations[appLanguage] || translations.en;
+            const taxRate = 18;
+            const carWashPrice = bookingDetails.carWash ? 150 : 0;
+            const basePrice = bookingDetails.slot.price;
+            const taxableAmount = basePrice + carWashPrice;
+            const taxAmount = taxableAmount * (taxRate / 100);
+
+            return (
+                <div className="p-8">
+                    <div className="bg-slate-50 rounded-2xl p-6 shadow-xl max-w-lg mx-auto">
+                        {!isPastBooking && <h2 className="text-2xl font-bold text-green-600 mb-4 text-center">{t.paymentSuccessful}</h2>}
+                        <h3 className="text-xl font-bold text-amber-600 mb-4 text-center">{t.invoiceDetails}</h3>
+                        <div className="bg-white p-4 rounded-xl text-left space-y-2 text-slate-800 border">
+                           <p><span className="font-bold">{t.invoiceID}</span> {bookingDetails.id}</p>
+                           <p><span className="font-bold">{t.date}</span> {bookingDetails.date}</p>
+                           <hr/>
+                           <div className="flex justify-between"><p>{t.parkingSlot} ({bookingDetails.slot.name})</p><p>₹{basePrice.toFixed(2)}</p></div>
+                           {bookingDetails.carWash && <div className="flex justify-between"><p>{t.carWash}</p><p>₹{carWashPrice.toFixed(2)}</p></div>}
+                           <hr/>
+                           <div className="flex justify-between"><p>{t.taxableAmount}</p><p>₹{taxableAmount.toFixed(2)}</p></div>
+                           <div className="flex justify-between"><p>{t.gst(taxRate)}</p><p>₹{taxAmount.toFixed(2)}</p></div>
+                           <hr/>
+                           <div className="flex justify-between font-extrabold text-lg"><p>{t.totalAmountDue}</p><p>₹{amount.toFixed(2)}</p></div>
+                        </div>
+                        <button onClick={onNewBooking} className="mt-8 w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-xl hover:bg-blue-700">{isPastBooking ? "Back to Bookings" : t.startNewBooking}</button>
+                    </div>
+                </div>
+            );
+        };
+
+        const ReportView = () => {
+            const { showApp } = useContext(AppContext);
+            const chartRefs = useRef({});
+
+            useEffect(() => {
+                const initCharts = () => {
+                    const occupancyData = { all: { labels: ['Market (BBSR)', 'Infocity (BBSR)', 'Sakchi (JSR)'], datasets: [{ label: 'Occupied', data: [75, 40, 90], backgroundColor: '#fbbf24' }, { label: 'Available', data: [25, 60, 10], backgroundColor: '#64748b' }] } };
+                    const bookingsData = { labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], datasets: [{ label: 'Bookings', data: [120, 150, 145, 180, 175, 210, 190], borderColor: '#3b82f6', tension: 0.4 }] };
+                    const servicesData = { labels: ['Parking', 'Car Wash', 'EV', 'Valet'], datasets: [{ data: [300, 50, 75, 40], backgroundColor: ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b'] }] };
+                    
+                    chartRefs.current.occupancy = new Chart(document.getElementById('occupancyChart').getContext('2d'), { type: 'bar', data: occupancyData.all, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } } } });
+                    chartRefs.current.bookings = new Chart(document.getElementById('bookingsChart').getContext('2d'), { type: 'line', data: bookingsData, options: { responsive: true, maintainAspectRatio: false } });
+                    chartRefs.current.services = new Chart(document.getElementById('servicesChart').getContext('2d'), { type: 'doughnut', data: servicesData, options: { responsive: true, maintainAspectRatio: false } });
+                };
+                
+                initCharts();
+                return () => { Object.values(chartRefs.current).forEach(chart => chart.destroy()); };
+            }, []);
+
+            return (
+                <div className="relative min-h-screen md:flex">
+                    <aside className="bg-slate-800 text-slate-100 w-64 space-y-6 py-7 px-2 md:flex md:flex-col flex-shrink-0">
+                        <a href="#" className="text-white flex items-center space-x-3 px-4"><span className="text-amber-400 text-3xl font-black">P</span><span className="text-2xl font-bold">SmartPark</span></a>
+                        <nav className="flex-grow">
+                            <a href="#overview" className="nav-link block py-2.5 px-4 rounded-lg">Overview</a>
+                            <a href="#about-us" className="nav-link block py-2.5 px-4 rounded-lg">About Us</a>
+                            <div className="px-2 pt-4"><div className="border-t border-slate-700"></div>
+                                <div className="pt-4 space-y-2">
+                                    <button onClick={() => showApp('customer')} className="w-full text-left px-4 py-2 text-sm rounded-md hover:bg-slate-700">User Login</button>
+                                    <button onClick={() => showApp('provider')} className="w-full text-left px-4 py-2 text-sm rounded-md hover:bg-slate-700">Provider Login</button>
+                                    <button onClick={() => showApp('guest')} className="w-full text-left px-4 py-2 text-sm rounded-md hover:bg-slate-700">Guest Login</button>
+                                </div>
+                            </div>
+                        </nav>
+                    </aside>
+                    <main className="flex-1 p-6 md:p-10 overflow-y-auto">
+                        <section id="overview" className="content-section"><h2 className="text-3xl font-bold border-b-4 border-amber-400 pb-2 mb-4">Business Overview</h2><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"><div className="stat-card"><h3 className="font-semibold">Total Revenue (YTD)</h3><p className="text-4xl font-extrabold mt-2">₹12.8M</p></div><div className="stat-card"><h3 className="font-semibold">Total Bookings</h3><p className="text-4xl font-extrabold mt-2">256,430</p></div><div className="stat-card"><h3 className="font-semibold">Active Users</h3><p className="text-4xl font-extrabold mt-2">42,150</p></div><div className="stat-card"><h3 className="font-semibold">Partner Locations</h3><p className="text-4xl font-extrabold mt-2">128</p></div></div></section>
+                        <section id="operations" className="content-section"><h2 className="text-3xl font-bold border-b-4 border-amber-400 pb-2 mb-4">Live Operations</h2><div className="bg-white p-6 rounded-lg shadow-md"><h3 className="text-xl font-bold mb-4">Live Occupancy</h3><div className="chart-container"><canvas id="occupancyChart"></canvas></div></div></section>
+                        <section id="insights" className="content-section"><h2 className="text-3xl font-bold border-b-4 border-amber-400 pb-2 mb-4">Customer Insights</h2><div className="grid grid-cols-1 lg:grid-cols-5 gap-8"><div className="lg:col-span-3 bg-white p-6 rounded-lg shadow-md"><h3 className="text-xl font-bold">Booking Trends</h3><div className="chart-container h-80"><canvas id="bookingsChart"></canvas></div></div><div className="lg:col-span-2 bg-white p-6 rounded-lg shadow-md"><h3 className="text-xl font-bold">Service Popularity</h3><div className="chart-container h-80"><canvas id="servicesChart"></canvas></div></div></div></section>
+                        <section id="about-us" className="content-section"><h2 className="text-3xl font-bold border-b-4 border-amber-400 pb-2 mb-4">About Us</h2><div className="bg-white p-6 rounded-lg shadow-md"><p>Founder: Nilabja Sen</p><p>Co-Founder: Animesh</p><p>Marketing: Rahul & Sukhbir Sohal</p><p>Finance: Armaan Sanket</p></div></section>
+                    </main>
+                </div>
+            );
+        };
+        
+        const PrivacyPolicyScreen = ({ onBack }) => {
+            return (
+                <div className="p-8 max-w-4xl mx-auto">
+                    <h1 className="text-3xl font-bold mb-4">Privacy Policy</h1>
+                    <div className="space-y-4 text-slate-700">
+                        <p>Welcome to SmartPark! We are committed to protecting your personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information.</p>
+                        <h2 className="text-2xl font-bold mt-4">Information We Collect</h2>
+                        <p>Personal Information: Name, email address, phone number, vehicle details, and payment information. Location Data: Geolocation information to facilitate parking services. Usage Data: Information about how you interact with our app.</p>
+                        <h2 className="text-2xl font-bold mt-4">How We Use Your Information</h2>
+                        <p>To provide and maintain our services, process transactions, communicate with you, and improve our app.</p>
+                        <h2 className="text-2xl font-bold mt-4">Contact Us</h2>
+                        <p>If you have any questions, please contact us at: DLF, Patia, Bhubaneswar, 7750919341, info@smartpark.com</p>
+                    </div>
+                    <button onClick={onBack} className="mt-8 bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">Back to Login</button>
+                </div>
+            );
+        };
+        
+        const TermsConditionsScreen = ({ onBack }) => {
+            return (
+                <div className="p-8 max-w-4xl mx-auto">
+                    <h1 className="text-3xl font-bold mb-4">Terms and Conditions</h1>
+                    <div className="space-y-4 text-slate-700">
+                        <h2 className="text-2xl font-bold mt-4">Acceptance of Terms</h2>
+                        <p>By using the SmartPark platform, you confirm you are at least 18 years old and capable of entering into binding contracts.</p>
+                        <h2 className="text-2xl font-bold mt-4">Services Offered</h2>
+                        <p>SmartPark connects users with parking providers. We act as an intermediary, facilitating bookings and payments.</p>
+                        <h2 className="text-2xl font-bold mt-4">Ordering and Payment</h2>
+                        <p>Prices are determined by the parking providers and may include taxes. Payments are processed through secure gateways.</p>
+                    </div>
+                     <button onClick={onBack} className="mt-8 bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">Back to Login</button>
+                </div>
+            );
+        };
+
+        function App() {
+            const [view, setView] = useState('report');
+            const [appType, setAppType] = useState('customer');
+            const [appLanguage, setAppLanguage] = useState('en');
+
+            const showApp = (type) => { setAppType(type); setView('app'); };
+            const showReport = () => setView('report');
+
+            return (
+                <AppContext.Provider value={{ appLanguage, setAppLanguage, view, setView, appType, setAppType, showApp, showReport }}>
+                    {view === 'report' && <ReportView />}
+                    {view === 'app' && (
+                        <>
+                            {appType === 'customer' && <CustomerApp onLogout={showReport} />}
+                            {appType === 'provider' && <ServiceProviderApp onLogout={showReport} />}
+                            {appType === 'guest' && <CustomerApp onLogout={showReport} isGuest={true} />}
+                        </>
+                    )}
+                </AppContext.Provider>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+
+    </script>
+</body>
+</html>
